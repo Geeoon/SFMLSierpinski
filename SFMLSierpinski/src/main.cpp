@@ -1,12 +1,23 @@
 #include <SFML/Graphics.hpp>
 
 void pollEvents(sf::RenderWindow& window);
-sf::Texture cycle(sf::RenderTexture& texture);
+sf::Texture cycle(sf::RenderTexture& texture, sf::ContextSettings& set);
 
 int main() {
-	sf::RenderWindow window(sf::VideoMode(800, 600), "Sierpinski's Triangle");
+	sf::ContextSettings settings;
+	settings.antialiasingLevel = 0;
+	sf::RenderWindow window(sf::VideoMode::getFullscreenModes()[0], "Sierpinski's Triangle", sf::Style::Fullscreen, settings);
+	window.setFramerateLimit(1);
 	sf::RenderTexture finalTexture;
-	finalTexture.create(600, 600);
+	int len = window.getSize().x;
+	if (len > window.getSize().y) {
+		len = window.getSize().y;
+	}
+	sf::View view;
+	view = window.getView();
+	view.move(-(float)window.getSize().x / 4, 0.0f);
+	window.setView(view);
+	finalTexture.create(len, len, settings);
 	sf::ConvexShape triangle;
 	triangle.setPointCount(3);
 	triangle.setPoint(0, sf::Vector2f((float)finalTexture.getSize().x / 2, 0.0f));
@@ -20,7 +31,7 @@ int main() {
 	while (window.isOpen()) {
 		pollEvents(window);
 		window.clear(sf::Color::Black);
-		sf::Texture temp = cycle(finalTexture);
+		sf::Texture temp = cycle(finalTexture, settings);
 		finalTexture.clear(sf::Color::Black);
 		finalTexture.draw(sf::Sprite(temp));
 		finalTexture.display();
@@ -37,20 +48,26 @@ void pollEvents(sf::RenderWindow& window) {
 		if (event.type == sf::Event::Closed) {
 			window.close();
 		} else if (event.type == sf::Event::Resized) {
-			sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
+			sf::FloatRect visibleArea(0.0f, 0.0f, event.size.width, event.size.height);
 			window.setView(sf::View(visibleArea));
+		} else if (event.type == sf::Event::KeyPressed) {
+			if (event.key.code == sf::Keyboard::Escape) {
+				window.close();
+			} else if (event.key.code == sf::Keyboard::Space) {
+				//may add a way to advance through cycles
+			}
 		}
 	}
 }
 
-sf::Texture cycle(sf::RenderTexture& texture) {
+sf::Texture cycle(sf::RenderTexture& texture, sf::ContextSettings& set) {
 	sf::RenderTexture outputTexture;
-	outputTexture.create(texture.getSize().x, texture.getSize().y);
+	outputTexture.create(texture.getSize().x, texture.getSize().y, set);
 	outputTexture.clear(sf::Color::Black);
 	sf::Sprite textureSprite = sf::Sprite(texture.getTexture());
 	textureSprite.setScale(0.5f, 0.5f);
 	
-	textureSprite.setPosition((float)texture.getSize().x / 4, 0);
+	textureSprite.setPosition((float)texture.getSize().x / 4, 0.0f);
 	outputTexture.draw(textureSprite);
 	textureSprite.setPosition(0, (float)texture.getSize().y / 2);
 	outputTexture.draw(textureSprite);
